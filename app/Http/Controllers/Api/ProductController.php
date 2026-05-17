@@ -10,6 +10,18 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+    public function search(Request $request)
+    {
+        $query = $request->query("q");
+        $product = Product::where("name", "like", "%" . $query . "%")->get();
+
+        return response()->json([
+            "Query" => $query,
+            // "data" => $product->load(["product_detail", "category"]),
+             "data" => $product,
+            "message" => "Search product successfully"
+        ]);
+    }
     /**
      * Display a listing of the resource.
      */
@@ -33,7 +45,7 @@ class ProductController extends Controller
         //
         $validate = $request->validate([
             "name" => "required|string|max:225|min:3",
-            "description" => "required|string|max:225|min:3",
+            "description" => "required|string|min:3",
             "price" => "required|integer|min:0",
             "status" => "required|boolean",
             "image" => "nullable|file|max:2048",
@@ -94,7 +106,7 @@ class ProductController extends Controller
 
         $validate = $request->validate([
             "name" => "sometimes|required|string|max:225|min:3",
-            "description" => "sometimes|required|string|max:225|min:3",
+            "description" => "sometimes|required|string|min:3",
             "price" => "sometimes|required|integer|min:0",
             "status" => "sometimes|required|boolean",
             "image" => "nullable|file|max:2048",

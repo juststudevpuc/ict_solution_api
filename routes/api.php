@@ -50,6 +50,7 @@ Route::prefix("admin")->middleware(["auth:sanctum", "checkAdmin"])->group(functi
 
     // Admin Products
     Route::prefix("product")->group(function () {
+        Route::get("/search", [ProductController::class, "search"]);
         Route::get("/", [ProductController::class, "index"]);
         Route::get("/{id}", [ProductController::class, "show"]);
         Route::post("/", [ProductController::class, "store"]);
@@ -59,6 +60,7 @@ Route::prefix("admin")->middleware(["auth:sanctum", "checkAdmin"])->group(functi
 
     // Admin Orders
     Route::prefix("order")->group(function () {
+        Route::get("/search", [OrderController::class, "search"]);
         Route::get("/", [OrderController::class, "index"]);
         Route::get("/{id}", [OrderController::class, "show"]);
         Route::put("/{id}", [OrderController::class, "update"]);

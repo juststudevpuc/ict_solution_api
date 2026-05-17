@@ -101,13 +101,32 @@ class OrderController extends Controller
      */
     public function index()
     {
-        // Use dot notation to load the product inside orderDetails
-        $order = Order::with(["orderDetails.product"])->orderBy('created_at', 'desc')->get();
+        // 1. Start building the query (don't get the data yet)
+        $query = Order::with('orderDetails.product')->latest();
+
+        if (auth()->user()->role !== 'admin') {
+            // If they are NOT an admin, lock the query to only their ID
+            $query->where('user_id', auth()->id());
+        }
+        $orders = $query->get();
+        return response()->json($orders);
+    }
+    // search
+    public function search(Request $request)
+    {
+        $query = $request->query("q");
+
+        // ✅ FIXED: Search by order_no OR customer_name
+        $orders = Order::where("order_no", "like", "%" . $query . "%")
+            ->orWhere("customer_name", "like", "%" . $query . "%")
+            ->get();
+        $orders->load(["orderDetails.product"]);
 
         return response()->json([
-            "data" => $order,
-            "message" => "get order success"
-        ], 200);
+            "Query" => $query,
+            "data" => $orders,
+            "message" => "Search order successfully"
+        ]);
     }
 
     /**
