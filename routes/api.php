@@ -23,6 +23,8 @@ Route::get("/product", [ProductController::class, "index"]);
 Route::middleware("auth:sanctum")->group(function () {
     Route::post("/logout", [AuthController::class, "logout"]);
     Route::get("/me", [AuthController::class, "me"]);
+    // Add this new route for updating the profile!
+    Route::post("/user/update", [AuthController::class, "updateProfile"]);
 
     // User Orders
     Route::post("/order", [OrderController::class, "store"]);
@@ -45,7 +47,7 @@ Route::prefix("category")->group(function () {
 // Example: POST /api/admin/product
 Route::prefix("admin")->middleware(["auth:sanctum", "checkAdmin"])->group(function () {
 
-    // Admin Categories
+    Route::get("/user", [AuthController::class, "index"]);
 
 
     // Admin Products
@@ -65,5 +67,8 @@ Route::prefix("admin")->middleware(["auth:sanctum", "checkAdmin"])->group(functi
         Route::get("/{id}", [OrderController::class, "show"]);
         Route::put("/{id}", [OrderController::class, "update"]);
         Route::delete("/{id}", [OrderController::class, "destroy"]);
+
+        Route::patch('/{id}/approve', [OrderController::class, 'approve']);
+        Route::patch('/{id}/reject', [OrderController::class, 'reject']);
     });
 });

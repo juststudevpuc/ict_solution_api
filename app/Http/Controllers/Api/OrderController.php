@@ -99,17 +99,57 @@ class OrderController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         // 1. Start building the query (don't get the data yet)
-        $query = Order::with('orderDetails.product')->latest();
+        // $query = Order::with('orderDetails.product')->latest();
+
+        $query = Order::with('orderDetails.product');
 
         if (auth()->user()->role !== 'admin') {
             // If they are NOT an admin, lock the query to only their ID
             $query->where('user_id', auth()->id());
         }
-        $orders = $query->get();
-        return response()->json($orders);
+        // $query = Order::query();
+
+        if ($request->has('start_date') && $request->start_date !== '') {
+            $startDate = Carbon::parse($request->start_date)->startOfDay();
+            $query->where('created_at', '>=', $startDate);
+        }
+
+        if ($request->has('end_date') && $request->end_date !== '') {
+            $endDate = Carbon::parse($request->end_date)->endOfDay();
+            $query->where('created_at', '<=', $endDate);
+        }
+
+        if ($request->has('status') && $request->status !== '') {
+            if ($request->status === 'paid') {
+                // 1. Math check: is total_paid >= total_amount?
+                $query->whereRaw([
+                    '$expr' => [
+                        '$gte' => ['$total_paid', '$total_amount']
+                    ]
+                ]);
+                // 2. NEW SECURITY LOCK: Ensure it is ALSO approved!
+                $query->where('status', 'approved');
+            } else if ($request->status === 'pending') {
+                // Math check: is total_paid < total_amount?
+                $query->whereRaw([
+                    '$expr' => [
+                        '$lt' => ['$total_paid', '$total_amount']
+                    ]
+                ]);
+            } else {
+                // If React explicitly asks for 'approved' or 'rejected'
+                $query->where('status', $request->status);
+            }
+        }
+
+        $orders = $query->orderBy('created_at', 'desc')->get();
+
+        return response()->json([
+            'data' => $orders
+        ], 200);
     }
     // search
     public function search(Request $request)
@@ -191,6 +231,8 @@ class OrderController extends Controller
                 $newQty = max(0, $currentQty - $orderQty);
                 $product->update(["qty" => $newQty]);
             }
+            broadcast(new \App\Events\OrderAlert($order))->toOthers();
+
             return response()->json([
                 "data" => $order->load(["orderDetails", "user"]),
                 "message" => "Create order success"
@@ -267,5 +309,23 @@ class OrderController extends Controller
             "data" => $order,
             "message" => "delete order success"
         ], 200);
+    }
+
+    public function approve(string $id)
+    {
+        $order = Order::findOrFail($id);
+        $order->status = 'approved';
+        $order->save();
+
+        return response()->json(['message' => 'Order approved!'], 200);
+    }
+
+    public function reject(string $id)
+    {
+        $order = Order::findOrFail($id);
+        $order->status = 'rejected';
+        $order->save();
+
+        return response()->json(['message' => 'Order rejected!'], 200);
     }
 }

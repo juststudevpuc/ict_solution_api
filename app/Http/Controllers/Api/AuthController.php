@@ -18,6 +18,7 @@ class AuthController extends Controller
             "message" => "Users retrieved successfully"
         ], 200);
     }
+
     public function register(Request $request)
     {
         $request->validate([
@@ -93,6 +94,54 @@ class AuthController extends Controller
         return response()->json([
             "user" => $request->user(),
             "message" => "Get user successfully"
+        ], 200);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        // 1. Validate the incoming data
+        $request->validate([
+            "name" => "required|string|max:255|min:3",
+            "phone" => "nullable|string|max:20",
+            "address" => "nullable|string",
+            // Password validation: Only require currentPassword IF they type a newPassword
+            "currentPassword" => "required_with:newPassword",
+            "newPassword" => "nullable|string|min:3",
+            "image" => "nullable|image|mimes:jpeg,png,jpg,gif|max:2048"
+        ]);
+        // --- NEW: Handle Image Upload ---
+        if ($request->hasFile('image')) {
+            // Save the file into storage/app/public/avatars
+            $path = $request->file('image')->store('avatars', 'public');
+            // Save the URL to the database
+            $user->image = '/storage/' . $path;
+        }
+
+        // 2. Check and Update Password (if they provided one)
+        if ($request->filled("newPassword")) {
+            // Check if the current password they typed matches the database
+            if (!Hash::check($request->currentPassword, $user->password)) {
+                return response()->json([
+                    "error" => true,
+                    "message" => "Your current password is incorrect."
+                ], 400);
+            }
+            // Hash and set the new password
+            $user->password = Hash::make($request->newPassword);
+        }
+
+        // 3. Update basic information
+        $user->name = $request->name;
+        if ($request->filled("phone")) $user->phone = $request->phone;
+        if ($request->filled("address")) $user->address = $request->address;
+
+        $user->save();
+
+        return response()->json([
+            "user" => $user,
+            "message" => "Profile updated successfully!"
         ], 200);
     }
 }
