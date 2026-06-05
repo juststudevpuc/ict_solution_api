@@ -17,6 +17,9 @@ class Order extends Model
         "total_paid",
         "remark",
         "payment_method",
+        'duration_days', // 🔥 ADD THIS
+        'approved_at',   // 🔥 ADD THIS
+        'deadline_at'    // 🔥 ADD THIS
     ];
     public function user()
     {

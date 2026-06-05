@@ -49,6 +49,8 @@ Route::prefix("admin")->middleware(["auth:sanctum", "checkAdmin"])->group(functi
 
     Route::get("/user", [AuthController::class, "index"]);
 
+    Route::get("/getSale", [OrderController::class, "getSale"]);
+
 
     // Admin Products
     Route::prefix("product")->group(function () {

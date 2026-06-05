@@ -11,17 +11,22 @@ use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
-    public function getSale()
+    public function getSale(Request $request)
     {
-        // current month
-        $startOfMonth = Carbon::now("UTC")->startOfMonth();
-        $endOfMonth = Carbon::now("UTC")->endOfMonth();
+        // 1. Catch the date from React. If none is selected, default to 'now'.
+        $dateInput = $request->query('date');
+        $referenceDate = $dateInput ? Carbon::parse($dateInput, 'UTC') : Carbon::now('UTC');
+
+        // 2. Calculate month based on the specific reference date
+        $startOfMonth = $referenceDate->copy()->startOfMonth();
+        $endOfMonth = $referenceDate->copy()->endOfMonth();
 
         $saleThisMonth = Order::raw(function ($collection) use ($startOfMonth, $endOfMonth) {
             return $collection->aggregate([
                 [
                     '$match' => [
-                        'create_at' => [
+                        'status' => 'approved',
+                        'created_at' => [
                             '$gte' => new \MongoDB\BSON\UTCDateTime($startOfMonth),
                             '$lte' => new \MongoDB\BSON\UTCDateTime($endOfMonth),
                         ]
@@ -40,15 +45,16 @@ class OrderController extends Controller
         $total = isset($saleThisMonth[0]) ? $saleThisMonth[0]->total : 0;
         $total_order = isset($saleThisMonth[0]) ? $saleThisMonth[0]->total_order : 0;
 
-        // current year
-        $startOfYear = Carbon::now("UTC")->startOfYear();
-        $endOfYear = Carbon::now("UTC")->endOfYear();
+        // 3. Calculate the year based on the exact same reference date
+        $startOfYear = $referenceDate->copy()->startOfYear();
+        $endOfYear = $referenceDate->copy()->endOfYear();
 
         $summarySaleByMonth = Order::raw(function ($collection) use ($startOfYear, $endOfYear) {
             return $collection->aggregate([
                 [
                     '$match' => [
-                        'create_at' => [
+                        'status' => 'approved',
+                        'created_at' => [
                             '$gte' => new \MongoDB\BSON\UTCDateTime($startOfYear),
                             '$lte' => new \MongoDB\BSON\UTCDateTime($endOfYear),
                         ]
@@ -311,13 +317,22 @@ class OrderController extends Controller
         ], 200);
     }
 
-    public function approve(string $id)
+    public function approve(Request $request, string $id)
     {
         $order = Order::findOrFail($id);
+
+        // 1. Catch the custom days from React (Default to 30 if none provided)
+        $duration = $request->duration_days ?? 30;
+
+        // 2. Start the clock using DAYS!
         $order->status = 'approved';
+        $order->duration_days = $duration;
+        $order->approved_at = Carbon::now('UTC');
+        $order->deadline_at = Carbon::now('UTC')->addDays($duration); // changed to addDays!
+
         $order->save();
 
-        return response()->json(['message' => 'Order approved!'], 200);
+        return response()->json(['message' => 'Order approved with custom duration!'], 200);
     }
 
     public function reject(string $id)
