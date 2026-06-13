@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\InventoryController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductController;
 use Illuminate\Http\Request;
@@ -15,6 +16,19 @@ Route::post("/login", [AuthController::class, "login"]);
 
 // Anyone can view products
 Route::get("/product", [ProductController::class, "index"]);
+
+Route::prefix("inventory")->group(function () {
+    // Route::get("/search", [OrderController::class, "search"]);
+    Route::get("/", [InventoryController::class, "index"]);
+    Route::post("/", [InventoryController::class, "store"]);
+    Route::get('history/{productId}', [InventoryController::class, 'productHistory']);
+    Route::get("/{id}", [InventoryController::class, "show"]);
+    Route::put("/{id}", [InventoryController::class, "update"]);
+    Route::delete("/{id}", [InventoryController::class, "destroy"]);
+
+    // Route::patch('/{id}/approve', [InventoryController::class, 'approve']);
+    // Route::patch('/{id}/reject', [InventoryController::class, 'reject']);
+});
 
 
 // ==========================================
@@ -73,4 +87,15 @@ Route::prefix("admin")->middleware(["auth:sanctum", "checkAdmin"])->group(functi
         Route::patch('/{id}/approve', [OrderController::class, 'approve']);
         Route::patch('/{id}/reject', [OrderController::class, 'reject']);
     });
+
+    // Route::prefix("inventory")->group(function () {
+    //     // Route::get("/search", [OrderController::class, "search"]);
+    //     Route::get("/", [InventoryController::class, "index"]);
+    //     Route::get("/{id}", [InventoryController::class, "show"]);
+    //     Route::put("/{id}", [InventoryController::class, "update"]);
+    //     Route::delete("/{id}", [InventoryController::class, "destroy"]);
+
+    //     // Route::patch('/{id}/approve', [InventoryController::class, 'approve']);
+    //     // Route::patch('/{id}/reject', [InventoryController::class, 'reject']);
+    // });
 });

@@ -13,7 +13,7 @@ class ProductController extends Controller
     public function search(Request $request)
     {
         $query = $request->query("q");
-        $product = Product::where("name", "like", "%" . $query . "%")->get();
+        $product = Product::where("name", "like", "%" . $query . "%")->paginate(10);
 
         return response()->json([
             "Query" => $query,
@@ -28,7 +28,7 @@ class ProductController extends Controller
     public function index()
     {
         //
-        $product = Product::query()->get();
+        $product = Product::query()->paginate(10);
 
         return response()->json([
             "data" => $product->load("category"),

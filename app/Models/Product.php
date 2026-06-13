@@ -18,7 +18,8 @@ class Product extends Model
         "image_url",
         "image_public_id",
         "status",
-        "category_id"
+        "category_id",
+        "stock_qty"
     ];
     public function category()
     {

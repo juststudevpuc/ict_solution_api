@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Inventory;
 use App\Models\Order;
 use App\Models\OrderDetail;
 use App\Models\Product;
@@ -320,6 +321,31 @@ class OrderController extends Controller
     public function approve(Request $request, string $id)
     {
         $order = Order::findOrFail($id);
+        // for checking stock
+        foreach ($order->order_details as $item) {
+            $product = Product::findOrFail($item['product_id']);
+
+            if ($product->stock_qty < $item['qty']){
+                return response()->json([
+                    'message' => "Approve failed: Not enough stock for {$product->name}. Only {$product->stock_qty} left."
+                ]);
+            }
+        }
+        // for reduce stock amount
+        foreach ($order->order_details as $item) {
+            $product = Product::findOrFail($item['product_id']);
+            $product->stock_qty -= $item['qty'];
+            $product->save();
+        }
+
+        Inventory::create([
+            'product_id' => $product->id,
+            'type' => 'out',
+            'qty' => $item['qty'],
+            'stock_left' => $product->stock_qty,
+            'order_id' => $order->id,
+            'remark' => 'Sold via order',
+        ]);
 
         // 1. Catch the custom days from React (Default to 30 if none provided)
         $duration = $request->duration_days ?? 30;
