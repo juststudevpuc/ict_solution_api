@@ -15,12 +15,22 @@ class CheckAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-
-        if(!auth()->check() || auth()->user()->role !== "admin"){
+        // 1. Check if user is logged in
+        if (!auth()->check()) {
             return response()->json([
-                "message" => "Access Denied. Admin Only!"
-            ],403);
+                "message" => "Unauthenticated."
+            ], 401);
         }
+
+        // 2. Allow BOTH 'admin' and 'staff' to access the backend API routes
+        $role = strtolower(auth()->user()->role);
+
+        if (!in_array($role, ['admin', 'staff'])) {
+            return response()->json([
+                "message" => "Access Denied. Staff or Admin privileges required!"
+            ], 403);
+        }
+
         return $next($request);
     }
 }

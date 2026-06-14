@@ -50,6 +50,10 @@ class User extends Authenticatable
         return $this->role === 'user';
     }
 
+    public function isStaff() {
+        return $this->role === 'staff';
+    }
+
     /**
      * Get the attributes that should be cast.
      *

@@ -4,7 +4,9 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\InventoryController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\StaffController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -52,6 +54,11 @@ Route::prefix("category")->group(function () {
     Route::put("/{id}", [CategoryController::class, "update"]);
     Route::delete("/{id}", [CategoryController::class, "destroy"]);
 });
+
+Route::apiResource('staff', StaffController::class);
+
+Route::get('/permissions', [PermissionController::class, 'index']);
+Route::post('/permissions/update-matrix', [PermissionController::class, 'updateMatrix']);
 
 
 // ==========================================

@@ -108,13 +108,14 @@ class OrderController extends Controller
      */
     public function index(Request $request)
     {
-        // 1. Start building the query (don't get the data yet)
-        // $query = Order::with('orderDetails.product')->latest();
 
         $query = Order::with('orderDetails.product');
 
-        if (auth()->user()->role !== 'admin') {
-            // If they are NOT an admin, lock the query to only their ID
+        // Extract the role safely
+        $role = strtolower(auth()->user()->role ?? 'user');
+
+        // If they are NOT an admin and NOT a staff member, lock it to their ID
+        if (!in_array($role, ['admin', 'staff'])) {
             $query->where('user_id', auth()->id());
         }
         // $query = Order::query();
@@ -325,7 +326,7 @@ class OrderController extends Controller
         foreach ($order->order_details as $item) {
             $product = Product::findOrFail($item['product_id']);
 
-            if ($product->stock_qty < $item['qty']){
+            if ($product->stock_qty < $item['qty']) {
                 return response()->json([
                     'message' => "Approve failed: Not enough stock for {$product->name}. Only {$product->stock_qty} left."
                 ]);
