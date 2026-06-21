@@ -74,6 +74,8 @@ Route::prefix("admin")->middleware(["auth:sanctum", "checkAdmin"])->group(functi
     Route::get("/user", [AuthController::class, "index"]);
 
     Route::get("/getSale", [OrderController::class, "getSale"]);
+    // In routes/api.php
+    Route::get('/sales-summary', [OrderController::class, 'getSale']);
 
     Route::post('/order/{id}/process-refund', [OrderController::class, 'processRefund']);
 
