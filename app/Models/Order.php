@@ -13,13 +13,16 @@ class Order extends Model
         "order_no",
         'user_id',
         'customer_name',
+        'phone',          // 🔥 ADDED
+        'address',        // 🔥 ADDED
         "total_amount",
         "total_paid",
         "remark",
         "payment_method",
-        'duration_days', // 🔥 ADD THIS
-        'approved_at',   // 🔥 ADD THIS
-        'deadline_at'    // 🔥 ADD THIS
+        "status",         // 🔥 ADDED
+        'duration_days',
+        'approved_at',
+        'deadline_at'
     ];
     public function user()
     {

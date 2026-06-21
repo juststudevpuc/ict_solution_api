@@ -188,6 +188,8 @@ class OrderController extends Controller
             "total_paid" => "required",
             "remark" => "nullable|max:255",
             "payment_method" => "required|string|max:255",
+            "phone" => "required|string",    // 🔥 ADDED
+            "address" => "required|string",  // 🔥 ADDED
             "detail" => "required|array",
 
             "detail.*.product_id" => "required",
@@ -214,10 +216,13 @@ class OrderController extends Controller
             "order_no" => $order_no,
             "user_id" => $user->_id,
             "customer_name" => $user->name,
+            "phone" => $request->phone,      // 🔥 ADDED
+            "address" => $request->address,  // 🔥 ADDED
             "total_amount" => $request->total_amount,
             "total_paid" => $request->total_paid,
             "remark" => $request->remark,
             "payment_method" => $request->payment_method,
+            "status" => "pending"
         ]);
 
         if ($order) {
@@ -369,5 +374,69 @@ class OrderController extends Controller
         $order->save();
 
         return response()->json(['message' => 'Order rejected!'], 200);
+    }
+
+    /**
+     * CUSTOMER ACTION: Request a refund
+     */
+    public function requestRefund(string $id)
+    {
+        $order = Order::find($id);
+
+        if (!$order) {
+            return response()->json(['message' => 'Order not found'], 404);
+        }
+
+        // Change the status to alert the Admin
+        $order->status = 'refund_requested';
+        $order->save();
+
+        return response()->json([
+            'message' => 'Refund requested successfully. Please wait for admin approval.',
+            'data' => $order
+        ], 200);
+    }
+
+    /**
+     * ADMIN ACTION: Approve or Reject the refund
+     */
+    public function processRefund(Request $request, string $id)
+    {
+        $request->validate([
+            'action' => 'required|in:approve,reject'
+        ]);
+
+        $order = Order::with('orderDetails')->find($id);
+
+        if (!$order) {
+            return response()->json(['message' => 'Order not found'], 404);
+        }
+
+        if ($request->action === 'approve') {
+            $order->status = 'refunded';
+
+            // --- INVENTORY RESTOCK LOGIC ---
+            // If you DO NOT want to give the items back to the store, delete this loop!
+            foreach ($order->orderDetails as $item) {
+                $product = \App\Models\Product::find($item->product_id);
+                if ($product) {
+                    $product->update(['qty' => $product->qty + $item->qty]);
+                }
+            }
+            // -------------------------------
+
+            $message = 'Refund approved and inventory restocked!';
+        } else {
+            // If rejected, put it back to approved/paid status
+            $order->status = 'approved';
+            $message = 'Refund request rejected.';
+        }
+
+        $order->save();
+
+        return response()->json([
+            'message' => $message,
+            'data' => $order
+        ], 200);
     }
 }

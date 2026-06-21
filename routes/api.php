@@ -19,6 +19,7 @@ Route::post("/login", [AuthController::class, "login"]);
 // Anyone can view products
 Route::get("/product", [ProductController::class, "index"]);
 
+
 Route::prefix("inventory")->group(function () {
     // Route::get("/search", [OrderController::class, "search"]);
     Route::get("/", [InventoryController::class, "index"]);
@@ -45,6 +46,8 @@ Route::middleware("auth:sanctum")->group(function () {
     // User Orders
     Route::post("/order", [OrderController::class, "store"]);
     Route::get("/order", [OrderController::class, "index"]); // Fixed: Now uses OrderController!
+
+    Route::post('/order/{id}/request-refund', [OrderController::class, 'requestRefund']);
 });
 
 Route::prefix("category")->group(function () {
@@ -72,6 +75,7 @@ Route::prefix("admin")->middleware(["auth:sanctum", "checkAdmin"])->group(functi
 
     Route::get("/getSale", [OrderController::class, "getSale"]);
 
+    Route::post('/order/{id}/process-refund', [OrderController::class, 'processRefund']);
 
     // Admin Products
     Route::prefix("product")->group(function () {
