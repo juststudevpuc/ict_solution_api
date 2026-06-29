@@ -16,7 +16,7 @@ class OrderController extends Controller
     {
         // 1. Catch the date from React. If none is selected, default to 'now'.
         $dateInput = $request->query('date');
-        $referenceDate = $dateInput ? Carbon::parse($dateInput, 'UTC') : Carbon::now('UTC');
+        $referenceDate = $dateInput ? \Carbon\Carbon::parse($dateInput, 'UTC') : \Carbon\Carbon::now('UTC');
 
         // 2. Calculate month based on the specific reference date
         $startOfMonth = $referenceDate->copy()->startOfMonth();
@@ -94,12 +94,38 @@ class OrderController extends Controller
             ]);
         });
 
+        // 🔥 NEW FIX: Create a 12-month skeleton array starting with $0
+        $allMonths = [];
+        for ($i = 1; $i <= 12; $i++) {
+            // Using day 1 prevents month overflow bugs (e.g., Feb 30th)
+            $monthName = \Carbon\Carbon::create(null, $i, 1)->format('M'); // Jan, Feb, Mar...
+            $allMonths[$monthName] = [
+                'title' => $monthName,
+                'total' => 0
+            ];
+        }
+
+        // Loop through the actual MongoDB results and overwrite the $0 for months with sales
+        foreach ($summarySaleByMonth as $sale) {
+            // Support both array and object returns depending on the Mongo driver version
+            $title = is_array($sale) ? $sale['title'] : $sale->title;
+            $saleTotal = is_array($sale) ? $sale['total'] : $sale->total;
+
+            if (isset($allMonths[$title])) {
+                $allMonths[$title]['total'] = $saleTotal;
+            }
+        }
+
+        // Reset the associative array back to a simple index array so React understands it
+        $finalSummary = array_values($allMonths);
+
         return response()->json([
             "sale_this_month" => [
                 "total" => $total,
                 "total_order" => $total_order,
             ],
-            "summary_sale_by_month" => $summarySaleByMonth,
+            // Pass the newly filled timeline instead of the raw Mongo data
+            "summary_sale_by_month" => $finalSummary,
             "message" => "Get summary sale Successfully"
         ]);
     }
@@ -108,56 +134,72 @@ class OrderController extends Controller
      */
     public function index(Request $request)
     {
-
         $query = Order::with('orderDetails.product');
 
-        // Extract the role safely
         $role = strtolower(auth()->user()->role ?? 'user');
 
-        // If they are NOT an admin and NOT a staff member, lock it to their ID
         if (!in_array($role, ['admin', 'staff'])) {
             $query->where('user_id', auth()->id());
         }
-        // $query = Order::query();
 
+        // --- EXISTING DATE RANGE FILTERS ---
         if ($request->has('start_date') && $request->start_date !== '') {
-            $startDate = Carbon::parse($request->start_date)->startOfDay();
+            $startDate = \Carbon\Carbon::parse($request->start_date)->startOfDay();
             $query->where('created_at', '>=', $startDate);
         }
 
         if ($request->has('end_date') && $request->end_date !== '') {
-            $endDate = Carbon::parse($request->end_date)->endOfDay();
+            $endDate = \Carbon\Carbon::parse($request->end_date)->endOfDay();
             $query->where('created_at', '<=', $endDate);
         }
 
+        // --- 🔥 NEW: DAY / MONTH / YEAR FILTERS ---
+        if ($request->has('year') && $request->year !== '') {
+            $year = (int) $request->year;
+            $month = $request->has('month') && $request->month !== '' ? (int) $request->month : null;
+            $day = $request->has('day') && $request->day !== '' ? (int) $request->day : null;
+
+            if ($month && $day) {
+                // Filter by Exact Day
+                $date = \Carbon\Carbon::create($year, $month, $day);
+                $query->where('created_at', '>=', $date->copy()->startOfDay())
+                      ->where('created_at', '<=', $date->copy()->endOfDay());
+            } elseif ($month) {
+                // Filter by Entire Month
+                $date = \Carbon\Carbon::create($year, $month, 1);
+                $query->where('created_at', '>=', $date->copy()->startOfMonth())
+                      ->where('created_at', '<=', $date->copy()->endOfMonth());
+            } else {
+                // Filter by Entire Year
+                $date = \Carbon\Carbon::create($year, 1, 1);
+                $query->where('created_at', '>=', $date->copy()->startOfYear())
+                      ->where('created_at', '<=', $date->copy()->endOfYear());
+            }
+        }
+
+        // --- EXISTING STATUS FILTERS ---
         if ($request->has('status') && $request->status !== '') {
             if ($request->status === 'paid') {
-                // 1. Math check: is total_paid >= total_amount?
                 $query->whereRaw([
                     '$expr' => [
                         '$gte' => ['$total_paid', '$total_amount']
                     ]
                 ]);
-                // 2. NEW SECURITY LOCK: Ensure it is ALSO approved!
                 $query->where('status', 'approved');
             } else if ($request->status === 'pending') {
-                // Math check: is total_paid < total_amount?
                 $query->whereRaw([
                     '$expr' => [
                         '$lt' => ['$total_paid', '$total_amount']
                     ]
                 ]);
             } else {
-                // If React explicitly asks for 'approved' or 'rejected'
                 $query->where('status', $request->status);
             }
         }
 
-        $orders = $query->orderBy('created_at', 'desc')->get();
+        $orders = $query->orderBy('created_at', 'desc')->paginate(10);
 
-        return response()->json([
-            'data' => $orders
-        ], 200);
+        return response()->json($orders, 200);
     }
     // search
     public function search(Request $request)
@@ -180,18 +222,21 @@ class OrderController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(Request $request)
     {
-        //
+        // 1. Validate the incoming request (Notice 'payment_slip' is added)
         $request->validate([
             "total_amount" => "required",
             "total_paid" => "required",
             "remark" => "nullable|max:255",
             "payment_method" => "required|string|max:255",
-            "phone" => "required|string",    // 🔥 ADDED
-            "address" => "required|string",  // 🔥 ADDED
+            "phone" => "required|string",
+            "address" => "required|string",
+            "payment_slip" => "nullable|image|max:2048", // 🔥 NEW: Validate the image
             "detail" => "required|array",
-
             "detail.*.product_id" => "required",
             "detail.*.price" => "required",
             "detail.*.qty" => "required",
@@ -199,8 +244,7 @@ class OrderController extends Controller
             "detail.*.total" => "required",
         ]);
 
-        //order_no : ORD00001
-
+        // 2. Generate Order Number: ORD00001
         $lastOrder = Order::orderBy("_id", "desc")->first();
         if ($lastOrder) {
             $lastNumber = substr($lastOrder->order_no, 3);
@@ -211,20 +255,32 @@ class OrderController extends Controller
 
         $user = auth()->user();
 
+        // 🔥 NEW: 3. Handle Cloudinary Image Upload for Payment Slip
+        $payment_slip_url = null;
+        if ($request->hasFile("payment_slip")) {
+            $upload = \CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::uploadApi()->upload(
+                $request->file("payment_slip")->getRealPath(),
+                ["folder" => config("cloudinary.upload_present", "ict_solu_receipts")]
+            );
+            $payment_slip_url = $upload["secure_url"];
+        }
 
+        // 4. Create the Order
         $order = Order::create([
             "order_no" => $order_no,
             "user_id" => $user->_id,
             "customer_name" => $user->name,
-            "phone" => $request->phone,      // 🔥 ADDED
-            "address" => $request->address,  // 🔥 ADDED
+            "phone" => $request->phone,
+            "address" => $request->address,
             "total_amount" => $request->total_amount,
             "total_paid" => $request->total_paid,
             "remark" => $request->remark,
             "payment_method" => $request->payment_method,
-            "status" => "pending"
+            "status" => "pending",
+            "payment_slip" => $payment_slip_url // 🔥 NEW: Save the Cloudinary URL to the database
         ]);
 
+        // 5. Process Order Details and Reduce Stock
         if ($order) {
             foreach ($request->detail as $item) {
                 OrderDetail::create([
@@ -235,15 +291,18 @@ class OrderController extends Controller
                     "discount" => $item["discount"],
                     "total" => $item["total"],
                 ]);
-                // get curr qty in product
+
+                // Reduce stock quantity
                 $product = Product::find($item["product_id"]);
-
-                $currentQty = $product->qty;
-                $orderQty = $item["qty"];
-
-                $newQty = max(0, $currentQty - $orderQty);
-                $product->update(["qty" => $newQty]);
+                if ($product) {
+                    $currentQty = $product->qty;
+                    $orderQty = $item["qty"];
+                    $newQty = max(0, $currentQty - $orderQty);
+                    $product->update(["qty" => $newQty]);
+                }
             }
+
+            // Broadcast alert (if you are using websockets)
             broadcast(new \App\Events\OrderAlert($order))->toOthers();
 
             return response()->json([
@@ -326,47 +385,46 @@ class OrderController extends Controller
 
     public function approve(Request $request, string $id)
     {
-        $order = Order::findOrFail($id);
-        // for checking stock
-        foreach ($order->order_details as $item) {
-            $product = Product::findOrFail($item['product_id']);
+        // 1. Eager load the camelCase relationship
+        $order = Order::with('orderDetails')->findOrFail($id);
 
+        // 2. 🔥 FIX: Access as $order->orderDetails (no underscore)
+        foreach ($order->orderDetails as $item) {
+            $product = Product::findOrFail($item['product_id']);
             if ($product->stock_qty < $item['qty']) {
                 return response()->json([
-                    'message' => "Approve failed: Not enough stock for {$product->name}. Only {$product->stock_qty} left."
-                ]);
+                    'message' => "Approve failed: Not enough stock for {$product->name}."
+                ], 400);
             }
         }
-        // for reduce stock amount
-        foreach ($order->order_details as $item) {
+
+        // 3. 🔥 FIX: Access as $order->orderDetails (no underscore)
+        foreach ($order->orderDetails as $item) {
             $product = Product::findOrFail($item['product_id']);
+
             $product->stock_qty -= $item['qty'];
             $product->save();
+
+            Inventory::create([
+                'product_id' => $product->id,
+                'type' => 'out',
+                'qty' => $item['qty'],
+                'stock_left' => $product->stock_qty,
+                'order_id' => $order->id,
+                'remark' => 'Sold via order: ' . $order->order_no,
+            ]);
         }
 
-        Inventory::create([
-            'product_id' => $product->id,
-            'type' => 'out',
-            'qty' => $item['qty'],
-            'stock_left' => $product->stock_qty,
-            'order_id' => $order->id,
-            'remark' => 'Sold via order',
+        $duration = $request->duration_days ?? 30;
+        $order->update([
+            'status' => 'approved',
+            'duration_days' => $duration,
+            'approved_at' => Carbon::now('UTC'),
+            'deadline_at' => Carbon::now('UTC')->addDays($duration),
         ]);
 
-        // 1. Catch the custom days from React (Default to 30 if none provided)
-        $duration = $request->duration_days ?? 30;
-
-        // 2. Start the clock using DAYS!
-        $order->status = 'approved';
-        $order->duration_days = $duration;
-        $order->approved_at = Carbon::now('UTC');
-        $order->deadline_at = Carbon::now('UTC')->addDays($duration); // changed to addDays!
-
-        $order->save();
-
-        return response()->json(['message' => 'Order approved with custom duration!'], 200);
+        return response()->json(['message' => 'Order approved successfully!'], 200);
     }
-
     public function reject(string $id)
     {
         $order = Order::findOrFail($id);

@@ -100,7 +100,7 @@ Route::prefix("admin")->middleware(["auth:sanctum", "checkAdmin"])->group(functi
         Route::patch('/{id}/approve', [OrderController::class, 'approve']);
         Route::patch('/{id}/reject', [OrderController::class, 'reject']);
     });
-
+    
     // Route::prefix("inventory")->group(function () {
     //     // Route::get("/search", [OrderController::class, "search"]);
     //     Route::get("/", [InventoryController::class, "index"]);

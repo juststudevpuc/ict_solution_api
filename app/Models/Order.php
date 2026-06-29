@@ -13,16 +13,17 @@ class Order extends Model
         "order_no",
         'user_id',
         'customer_name',
-        'phone',          // 🔥 ADDED
-        'address',        // 🔥 ADDED
+        'phone',
+        'address',
         "total_amount",
         "total_paid",
         "remark",
         "payment_method",
-        "status",         // 🔥 ADDED
+        "status",
         'duration_days',
         'approved_at',
-        'deadline_at'
+        'deadline_at',
+        'payment_slip' // 🔥 ADD THIS LINE
     ];
     public function user()
     {
@@ -33,9 +34,8 @@ class Order extends Model
     {
         return $this->hasMany(OrderDetail::class, "order_id", "_id");
     }
-    public function inventory() {
+    public function inventory()
+    {
         return $this->hasMany(Inventory::class, 'order_id', '_id');
     }
-
-
 }

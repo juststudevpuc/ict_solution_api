@@ -12,11 +12,9 @@ class AuthController extends Controller
 {
     public function index()
     {
-        $user = User::all(); // Fetch everyone from the database
-        return response()->json([
-            "data" => $user,
-            "message" => "Users retrieved successfully"
-        ], 200);
+        $user = User::paginate(10);
+
+        return response()->json($user, 200);
     }
 
     public function register(Request $request)
