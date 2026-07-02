@@ -39,42 +39,70 @@ class AuthController extends Controller
         ], 201);
     }
 
+    // public function login(Request $request)
+    // {
+    //     $request->validate([
+    //         "email" => "required|email",
+    //         "password" => "required|string|min:3"
+    //     ]);
+
+    //     $user = User::where("email", $request->email)->first();
+
+    //     if (!$user) {
+    //         return response()->json(["message" => "User not found"], 404);
+    //     }
+
+    //     if (!Hash::check($request->password, $user->password)) {
+    //         return response()->json(["message" => "Incorrect password"], 404);
+    //     }
+
+    //     $token = $user->createToken("authtoken")->plainTextToken;
+
+    //     $cookie = cookie(
+    //         "auth_token",
+    //         $token,
+    //         60 * 24 * 7, // 7 days
+    //         "/",
+    //         null,
+    //         true,
+    //         true,
+    //         false,
+    //         "Strict"
+    //     );
+
+    //     return response()->json([
+    //         "user" => $user,
+    //         "token" => $token,
+    //         "message" => $user->role === 'admin' ? "Admin logged in successfully" : "User logged in successfully"
+    //     ], 200)->withCookie($cookie);
+    // }
+
     public function login(Request $request)
     {
-        $request->validate([
+        // 1. Validate the request
+        $credentials = $request->validate([
             "email" => "required|email",
             "password" => "required|string|min:3"
         ]);
 
-        $user = User::where("email", $request->email)->first();
+        // 2. Auth::attempt checks the database and password automatically!
+        if (\Illuminate\Support\Facades\Auth::attempt($credentials)) {
 
-        if (!$user) {
-            return response()->json(["message" => "User not found"], 404);
+            // 3. This one line securely generates the HttpOnly session cookie
+            $request->session()->regenerate();
+
+            // 4. Get the authenticated user
+            $user = \Illuminate\Support\Facades\Auth::user();
+
+            // 5. Return the user data (Notice we DO NOT return a token anymore!)
+            return response()->json([
+                "user" => $user,
+                "message" => $user->role === 'admin' ? "Admin logged in successfully" : "User logged in successfully"
+            ], 200);
         }
 
-        if (!Hash::check($request->password, $user->password)) {
-            return response()->json(["message" => "Incorrect password"], 404);
-        }
-
-        $token = $user->createToken("authtoken")->plainTextToken;
-
-        $cookie = cookie(
-            "auth_token",
-            $token,
-            60 * 24 * 7, // 7 days
-            "/",
-            null,
-            true,
-            true,
-            false,
-            "Strict"
-        );
-
-        return response()->json([
-            "user" => $user,
-            "token" => $token,
-            "message" => $user->role === 'admin' ? "Admin logged in successfully" : "User logged in successfully"
-        ], 200)->withCookie($cookie);
+        // 6. If Auth::attempt fails, return an error
+        return response()->json(["message" => "Incorrect email or password"], 401);
     }
 
     public function logout(Request $request)
