@@ -166,6 +166,9 @@ class AuthController extends Controller
         if ($request->filled("phone")) $user->phone = $request->phone;
         if ($request->filled("address")) $user->address = $request->address;
 
+        $user->company_name = $request->company_name;
+        $user->company_industry = $request->company_industry;
+
         $user->save();
 
         return response()->json([
