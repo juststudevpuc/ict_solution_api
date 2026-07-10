@@ -135,7 +135,10 @@ class AuthController extends Controller
             // Password validation: Only require currentPassword IF they type a newPassword
             "currentPassword" => "required_with:newPassword",
             "newPassword" => "nullable|string|min:3",
-            "image" => "nullable|image|mimes:jpeg,png,jpg,gif|max:2048"
+            "image" => "nullable|image|mimes:jpeg,png,jpg,gif|max:2048",
+
+            'company_name' => 'nullable|string|max:255',
+            'company_industry' => 'nullable|string|max:100',
         ]);
         // --- NEW: Handle Image Upload ---
         if ($request->hasFile('image')) {

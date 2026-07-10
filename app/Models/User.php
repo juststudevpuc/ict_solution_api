@@ -27,6 +27,8 @@ class User extends Authenticatable
         'phone',    // Make sure this is here!
         'address',
         'image',
+        'company_name',
+        'company_industry',
     ];
 
     /**
