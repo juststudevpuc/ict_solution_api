@@ -19,10 +19,6 @@ Route::post("/login", [AuthController::class, "login"]);
 // Anyone can view products
 Route::get("/product", [ProductController::class, "index"]);
 
-
-
-
-
 // ==========================================
 // 2. AUTHENTICATED USER ROUTES
 // ==========================================
@@ -30,7 +26,7 @@ Route::middleware("auth:sanctum")->group(function () {
     Route::post("/logout", [AuthController::class, "logout"]);
     Route::get("/me", [AuthController::class, "me"]);
     // Add this new route for updating the profile!
-    Route::post("/user/update", [AuthController::class, "updateProfile"]);
+    Route::post("user/update", [AuthController::class, "updateProfile"]);
 
     // User Orders
     Route::post("/order", [OrderController::class, "store"]);
@@ -90,7 +86,7 @@ Route::prefix("admin")->middleware(["auth:sanctum", "checkAdmin"])->group(functi
         Route::patch('/{id}/reject', [OrderController::class, 'reject']);
     });
 
-   
+
     Route::prefix("inventory")->group(function () {
     // Route::get("/search", [OrderController::class, "search"]);
     Route::get("/", [InventoryController::class, "index"]);
