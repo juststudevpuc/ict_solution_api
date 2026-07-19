@@ -163,17 +163,17 @@ class OrderController extends Controller
                 // Filter by Exact Day
                 $date = \Carbon\Carbon::create($year, $month, $day);
                 $query->where('created_at', '>=', $date->copy()->startOfDay())
-                      ->where('created_at', '<=', $date->copy()->endOfDay());
+                    ->where('created_at', '<=', $date->copy()->endOfDay());
             } elseif ($month) {
                 // Filter by Entire Month
                 $date = \Carbon\Carbon::create($year, $month, 1);
                 $query->where('created_at', '>=', $date->copy()->startOfMonth())
-                      ->where('created_at', '<=', $date->copy()->endOfMonth());
+                    ->where('created_at', '<=', $date->copy()->endOfMonth());
             } else {
                 // Filter by Entire Year
                 $date = \Carbon\Carbon::create($year, 1, 1);
                 $query->where('created_at', '>=', $date->copy()->startOfYear())
-                      ->where('created_at', '<=', $date->copy()->endOfYear());
+                    ->where('created_at', '<=', $date->copy()->endOfYear());
             }
         }
 
@@ -303,7 +303,7 @@ class OrderController extends Controller
             }
 
             // Broadcast alert (if you are using websockets)
-            broadcast(new \App\Events\OrderAlert($order))->toOthers();
+            // broadcast(new \App\Events\OrderAlert($order))->toOthers();
 
             return response()->json([
                 "data" => $order->load(["orderDetails", "user"]),
@@ -385,46 +385,62 @@ class OrderController extends Controller
 
     public function approve(Request $request, string $id)
     {
-        // 1. Eager load the camelCase relationship
+        // 1. Eager load the relationship
         $order = Order::with('orderDetails')->findOrFail($id);
 
-        // 2. 🔥 FIX: Access as $order->orderDetails (no underscore)
+        // 2. 🔥 FIX: Force integers and show exact numbers in the error!
         foreach ($order->orderDetails as $item) {
-            $product = Product::findOrFail($item['product_id']);
-            if ($product->stock_qty < $item['qty']) {
+            $productId = $item->product_id ?? $item['product_id'];
+
+            // Force the order quantity to be a strict integer
+            $qty = (int) ($item->qty ?? $item['qty']);
+
+            $product = Product::findOrFail($productId);
+
+            // Force the database stock to be a strict integer
+            $currentStock = (int) $product->stock_qty;
+
+            if ($currentStock < $qty) {
                 return response()->json([
-                    'message' => "Approve failed: Not enough stock for {$product->name}."
+                    'message' => "Approve failed: Not enough stock for {$product->name}. (In Stock: {$currentStock} | Requested: {$qty})"
                 ], 400);
             }
         }
 
-        // 3. 🔥 FIX: Access as $order->orderDetails (no underscore)
+        // 3. Process Inventory
         foreach ($order->orderDetails as $item) {
-            $product = Product::findOrFail($item['product_id']);
+            $productId = $item->product_id ?? $item['product_id'];
+            $qty = (int) ($item->qty ?? $item['qty']);
 
-            $product->stock_qty -= $item['qty'];
+            $product = Product::findOrFail($productId);
+
+            // Do strict integer math
+            $product->stock_qty = (int) $product->stock_qty - $qty;
             $product->save();
 
             Inventory::create([
                 'product_id' => $product->id,
                 'type' => 'out',
-                'qty' => $item['qty'],
+                'qty' => $qty,
                 'stock_left' => $product->stock_qty,
                 'order_id' => $order->id,
                 'remark' => 'Sold via order: ' . $order->order_no,
             ]);
         }
 
-        $duration = $request->duration_days ?? 30;
+        $duration = (int) ($request->duration_days ?? 30);
+
         $order->update([
             'status' => 'approved',
             'duration_days' => $duration,
-            'approved_at' => Carbon::now('UTC'),
-            'deadline_at' => Carbon::now('UTC')->addDays($duration),
+            'approved_at' => \Carbon\Carbon::now('UTC'),
+            'deadline_at' => \Carbon\Carbon::now('UTC')->addDays($duration),
         ]);
 
         return response()->json(['message' => 'Order approved successfully!'], 200);
     }
+
+
     public function reject(string $id)
     {
         $order = Order::findOrFail($id);
