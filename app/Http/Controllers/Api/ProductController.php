@@ -13,12 +13,15 @@ class ProductController extends Controller
     public function search(Request $request)
     {
         $query = $request->query("q");
-        $product = Product::where("name", "like", "%" . $query . "%")->paginate(10);
+
+        // 🔥 EXPERT FIX: Eager load relationships on search as well
+        $product = Product::with(['category', 'inventories'])
+            ->where("name", "like", "%" . $query . "%")
+            ->paginate(10);
 
         return response()->json([
             "Query" => $query,
-            // "data" => $product->load(["product_detail", "category"]),
-             "data" => $product,
+            "data" => $product,
             "message" => "Search product successfully"
         ]);
     }
@@ -28,7 +31,7 @@ class ProductController extends Controller
     public function index()
     {
         //
-        $product = Product::query()->paginate(10);
+        $product = Product::with(['category', 'inventories'])->paginate(10);
 
         return response()->json([
             "data" => $product->load("category"),
