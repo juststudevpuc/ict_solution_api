@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CareerController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\InventoryController;
+use App\Http\Controllers\Api\JobApplicationController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProductController;
@@ -19,8 +21,17 @@ Route::post("/login", [AuthController::class, "login"]);
 // Anyone can view products
 Route::get("/product", [ProductController::class, "index"]);
 
+// Route::prefix("careers")->group(function () {
+//     Route::get('/', [CareerController::class, 'adminIndex']);
+//     Route::post('/', [CareerController::class, 'store']);
+//     Route::put('/{id}', [CareerController::class, 'update']);
+//     Route::delete('/{id}', [CareerController::class, 'destroy']);
+// });
 
+Route::get("/careers", [CareerController::class, "index"]);
+Route::get('/careers/{id}', [CareerController::class, 'show']);
 
+// Submit job application with CV file
 // ==========================================
 // 2. AUTHENTICATED USER ROUTES
 // ==========================================
@@ -35,6 +46,8 @@ Route::middleware("auth:sanctum")->group(function () {
     Route::get("/order", [OrderController::class, "index"]); // Fixed: Now uses OrderController!
 
     Route::post('/order/{id}/request-refund', [OrderController::class, 'requestRefund']);
+
+    Route::post('/job-applications', [JobApplicationController::class, 'store']);
 });
 
 Route::prefix("category")->group(function () {
@@ -90,15 +103,28 @@ Route::prefix("admin")->middleware(["auth:sanctum", "checkAdmin"])->group(functi
 
 
     Route::prefix("inventory")->group(function () {
-    // Route::get("/search", [OrderController::class, "search"]);
-    Route::get("/", [InventoryController::class, "index"]);
-    Route::post("/", [InventoryController::class, "store"]);
-    Route::get('history/{productId}', [InventoryController::class, 'productHistory']);
-    Route::get("/{id}", [InventoryController::class, "show"]);
-    Route::put("/{id}", [InventoryController::class, "update"]);
-    Route::delete("/{id}", [InventoryController::class, "destroy"]);
+        // Route::get("/search", [OrderController::class, "search"]);
+        Route::get("/", [InventoryController::class, "index"]);
+        Route::post("/", [InventoryController::class, "store"]);
+        Route::get('history/{productId}', [InventoryController::class, 'productHistory']);
+        Route::get("/{id}", [InventoryController::class, "show"]);
+        Route::put("/{id}", [InventoryController::class, "update"]);
+        Route::delete("/{id}", [InventoryController::class, "destroy"]);
 
-    // Route::patch('/{id}/approve', [InventoryController::class, 'approve']);
-    // Route::patch('/{id}/reject', [InventoryController::class, 'reject']);
-});
+        // Route::patch('/{id}/approve', [InventoryController::class, 'approve']);
+        // Route::patch('/{id}/reject', [InventoryController::class, 'reject'])
+    });
+    Route::prefix("careers")->group(function () {
+        Route::get('/', [CareerController::class, 'adminIndex']);
+        Route::post('/', [CareerController::class, 'store']);
+        Route::put('/{id}', [CareerController::class, 'update']);
+        Route::delete('/{id}', [CareerController::class, 'destroy']);
+    });
+    Route::prefix("job-applications")->group(function () {
+
+        Route::get('/', [JobApplicationController::class, 'index']);
+        Route::get('/{id}', [JobApplicationController::class, 'show']);
+        Route::put('/{id}', [JobApplicationController::class, 'update']);
+        Route::delete('/{id}', [JobApplicationController::class, 'destroy']);
+    });
 });

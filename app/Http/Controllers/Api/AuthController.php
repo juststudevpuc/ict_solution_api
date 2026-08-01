@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class AuthController extends Controller
 {
@@ -140,12 +141,18 @@ class AuthController extends Controller
             'company_name' => 'nullable|string|max:255',
             'company_industry' => 'nullable|string|max:100',
         ]);
-        // --- NEW: Handle Image Upload ---
+      // --- NEW: Handle Image Upload via Cloudinary ---
         if ($request->hasFile('image')) {
-            // Save the file into storage/app/public/avatars
-            $path = $request->file('image')->store('avatars', 'public');
-            // Save the URL to the database
-            $user->image = '/storage/' . $path;
+            $upload = Cloudinary::uploadApi()->upload(
+                $request->file('image')->getRealPath(),
+                ["folder" => config("cloudinary.upload_preset", "ict_solu_img")]
+            );
+
+            // Save the secure Cloudinary URL directly to your database
+            $user->image = $upload["secure_url"];
+
+            // Optional: If you created a database column for the public_id, you can save it here
+            // $user->image_public_id = $upload["public_id"];
         }
 
         // 2. Check and Update Password (if they provided one)

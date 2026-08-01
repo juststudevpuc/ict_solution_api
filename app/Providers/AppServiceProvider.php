@@ -22,9 +22,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
-        URL::forceScheme('https');
-        Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
+        // 🔥 FIX: Only force HTTPS if we are on the live production server
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
 
+        Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
     }
 }

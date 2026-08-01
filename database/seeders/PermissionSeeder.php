@@ -27,6 +27,7 @@ class PermissionSeeder extends Seeder
             ['module_name' => 'Transaction History', 'key' => 'transaction_history', 'staff' => false, 'user' => false],
             ['module_name' => 'Reports', 'key' => 'report', 'staff' => false, 'user' => false],
             ['module_name' => 'Settings', 'key' => 'super_admin_only_setting', 'staff' => false, 'user' => false],
+            ['module_name' => 'career', 'key' => 'career', 'staff' => false, 'user' => false],
         ];
 
         foreach ($modules as $module) {
