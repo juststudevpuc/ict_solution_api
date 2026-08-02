@@ -28,6 +28,9 @@ Route::get("/product", [ProductController::class, "index"]);
 //     Route::delete('/{id}', [CareerController::class, 'destroy']);
 // });
 
+// Route::get("order/search", [OrderController::class, "search"]);
+
+
 Route::get("/careers", [CareerController::class, "index"]);
 Route::get('/careers/{id}', [CareerController::class, 'show']);
 

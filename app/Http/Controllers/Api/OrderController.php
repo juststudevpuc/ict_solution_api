@@ -206,11 +206,23 @@ class OrderController extends Controller
     {
         $query = $request->query("q");
 
-        // ✅ FIXED: Search by order_no OR customer_name
-        $orders = Order::where("order_no", "like", "%" . $query . "%")
-            ->orWhere("customer_name", "like", "%" . $query . "%")
+        $orders = Order::with(["orderDetails.product"])
+            ->where(function ($q) use ($query) {
+
+                // 🔥 EXPERT FIX: Handle MongoDB strict typing for numbers
+                if (is_numeric($query)) {
+                    // If they typed a number (like 1001), do an exact integer match
+                    $q->where("order_no", (int)$query);
+                } else {
+                    // If they typed text, do a standard string search
+                    $q->where("order_no", "like", "%" . $query . "%");
+                }
+
+                // Always search the customer name as a string
+                $q->orWhere("customer_name", "like", "%" . $query . "%");
+                $q->orWhere("phone", "like", "%" . $query . "%");
+            })
             ->get();
-        $orders->load(["orderDetails.product"]);
 
         return response()->json([
             "Query" => $query,
@@ -311,6 +323,7 @@ class OrderController extends Controller
             ], 201);
         }
     }
+
 
     /**
      * Display the specified resource.

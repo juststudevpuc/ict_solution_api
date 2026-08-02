@@ -14,9 +14,17 @@ class ProductController extends Controller
     {
         $query = $request->query("q");
 
-        // 🔥 EXPERT FIX: Eager load relationships on search as well
+        // We wrap the search conditions in a closure function ($q) to ensure
+        // the OR statements don't break any other global scopes or future queries.
         $product = Product::with(['category', 'inventories'])
-            ->where("name", "like", "%" . $query . "%")
+            ->where(function ($q) use ($query) {
+                $q->where("name", "like", "%" . $query . "%")
+                    ->orWhere("description", "like", "%" . $query . "%")
+                    // Upgrade: Search inside the related category name as well
+                    ->orWhereHas('category', function ($catQuery) use ($query) {
+                        $catQuery->where('name', 'like', "%" . $query . "%");
+                    });
+            })
             ->paginate(10);
 
         return response()->json([
