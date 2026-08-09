@@ -289,7 +289,9 @@ class OrderController extends Controller
             "remark" => $request->remark,
             "payment_method" => $request->payment_method,
             "status" => "pending",
-            "payment_slip" => $payment_slip_url // 🔥 NEW: Save the Cloudinary URL to the database
+            "payment_slip" => $payment_slip_url, // 🔥 NEW: Save the Cloudinary URL to the database
+
+            "duration_days" => (int) $request->input('duration_days', 30)
         ]);
 
         // 5. Process Order Details and Reduce Stock
@@ -441,7 +443,8 @@ class OrderController extends Controller
             ]);
         }
 
-        $duration = (int) ($request->duration_days ?? 30);
+        // $duration = (int) ($request->duration_days ?? 30);
+        $duration = (int) $order->duration_days;
 
         $order->update([
             'status' => 'approved',
