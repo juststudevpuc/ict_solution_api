@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use MongoDB\Laravel\Schema\Blueprint;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -17,6 +17,12 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('role')->default('user');
+            $table->string('phone', 20)->nullable();
+            $table->text('address')->nullable();
+            $table->string('image')->nullable();
+            $table->string('company_name')->nullable();
+            $table->string('company_industry')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

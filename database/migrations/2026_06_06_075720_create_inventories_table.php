@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use MongoDB\Laravel\Schema\Blueprint;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -11,21 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('inventories', function (Blueprint $collection) {
-            $collection->id();
-
-            $collection->index("product_id");
-            $collection->objectId("product_id");
-
-            $collection->string("type");
-            $collection->integer("qty");
-            $collection->integer("stock_left");
-
-            $collection->index("order_id");
-            $collection->objectId("order_id")->nullable();
-
-            $collection->string("remark")->nullable();
-            $collection->timestamps();
+        Schema::create('inventories', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
+            $table->foreignId('order_id')->nullable()->constrained('orders')->nullOnDelete();
+            $table->string('type');
+            $table->integer('qty');
+            $table->integer('stock_left');
+            $table->string('reference_id')->nullable();
+            $table->string('remark')->nullable();
+            $table->timestamps();
         });
     }
 

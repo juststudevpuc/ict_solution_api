@@ -2,26 +2,33 @@
 
 namespace App\Models;
 
-use MongoDB\laravel\Eloquent\Model;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Inventory extends Model
 {
-    //
-    protected $connection = "mongodb";
-    protected $table = "inventories";
     protected $fillable = [
-        "product_id",
-        "type",
-        "qty",
-        "stock_left",
-        "reference_id", // ddd order id
-        "remark",
+        'product_id',
+        'order_id',
+        'type',
+        'qty',
+        'stock_left',
+        'reference_id',
+        'remark',
     ];
 
-    public function product(){
-        return $this->belongsTo(Product::class, 'product_id','_id');
+    protected $casts = [
+        'qty' => 'integer',
+        'stock_left' => 'integer',
+    ];
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
     }
-    public function order() {
-        return $this->belongsTo(Order::class, 'order_id' , '_id');
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
     }
 }

@@ -64,7 +64,7 @@ class CareerController extends Controller
     // View a single job by its ID or Slug
     public function show($id)
     {
-        $career = Career::where('_id', $id)->orWhere('slug', $id)->first();
+        $career = Career::where('id', $id)->orWhere('slug', $id)->first();
 
         if (!$career) {
             return response()->json(["data" => null, "message" => "Career not found"], 404);

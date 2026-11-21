@@ -2,20 +2,28 @@
 
 namespace App\Models;
 
-use MongoDB\Laravel\Eloquent\Model;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Category extends Model
 {
-    //
-    protected $connection = "mongodb";
-    protected $table = "categories";
     protected $fillable = [
-        "name",
-        "description",
-        "status"
+        'name',
+        'description',
+        'status',
     ];
-    public function product()
+
+    protected $casts = [
+        'status' => 'boolean',
+    ];
+
+    public function products(): HasMany
     {
-        return $this->hasMany(Product::class, 'category_id', 'id');
+        return $this->hasMany(Product::class);
+    }
+
+    public function product(): HasMany
+    {
+        return $this->products();
     }
 }

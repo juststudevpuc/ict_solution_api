@@ -2,34 +2,39 @@
 
 namespace App\Models;
 
-use MongoDB\Laravel\Eloquent\Model;
-use MongoDB\Laravel\Eloquent\SoftDeletes; // 🔥 ADDED THIS
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Career extends Model
 {
-    use SoftDeletes; // 🔥 ADDED THIS
-
-    protected $connection = "mongodb";
-    protected $table = "careers";
+    use SoftDeletes;
 
     protected $fillable = [
-        "title",
-        "slug",
-        "department",
-        "job_type",
-        "location",
-        "job_level",
-        "vacancies",          // 🔥 NEW: Number of open positions
-        "salary_range",       // 🔥 NEW: e.g., "$500 - $800"
-        "job_description",
-        "job_requirement",
-        "job_responsibility",
-        "closing_date",
-        "status"
+        'title',
+        'slug',
+        'department',
+        'job_type',
+        'location',
+        'job_level',
+        'vacancies',
+        'salary_range',
+        'job_description',
+        'job_requirement',
+        'job_responsibility',
+        'closing_date',
+        'status',
     ];
 
-    public function applications()
+    protected $casts = [
+        'vacancies' => 'integer',
+        'job_requirement' => 'array',
+        'job_responsibility' => 'array',
+        'closing_date' => 'datetime',
+    ];
+
+    public function applications(): HasMany
     {
-        return $this->hasMany(JobApplication::class, 'career_id', '_id');
+        return $this->hasMany(JobApplication::class);
     }
 }

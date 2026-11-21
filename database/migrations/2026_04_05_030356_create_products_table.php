@@ -1,8 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use MongoDB\Laravel\Schema\Blueprint;
-
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -12,16 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('products', function (Blueprint $collection) {
-            $collection->id();
-            $collection->string("name");
-            $collection->string("description");
-            $collection->integer("price");
-            $collection->boolean("status")->default(true);
-            $collection->string("image")->nullable();
-            $collection->index("category_id");
-            $collection->objectId("category_id");
-            $collection->timestamps();
+        Schema::create('products', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('category_id')->nullable()->constrained('categories')->cascadeOnDelete();
+            $table->string('name');
+            $table->text('description')->nullable();
+            $table->decimal('price', 10, 2)->default(0);
+            $table->integer('stock_qty')->default(0);
+            $table->boolean('status')->default(true);
+            $table->string('image')->nullable();
+            $table->string('image_url')->nullable();
+            $table->string('image_public_id')->nullable();
+            $table->timestamps();
         });
     }
 

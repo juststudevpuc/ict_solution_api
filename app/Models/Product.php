@@ -2,32 +2,42 @@
 
 namespace App\Models;
 
-use MongoDB\Laravel\Eloquent\Model;
-
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
-    //
-    protected $connection = "mongodb";
-    protected $table = "products";
     protected $fillable = [
-        "name",
-        "description",
-        "price",
-        "image",
-        "image_url",
-        "image_public_id",
-        "status",
-        "category_id",
-        "stock_qty"
+        'name',
+        'description',
+        'price',
+        'image',
+        'image_url',
+        'image_public_id',
+        'status',
+        'category_id',
+        'stock_qty',
     ];
-    public function category()
+
+    protected $casts = [
+        'price' => 'decimal:2',
+        'stock_qty' => 'integer',
+        'status' => 'boolean',
+    ];
+
+    public function category(): BelongsTo
     {
-        // A product belongs to a category
-        return $this->belongsTo(Category::class, 'category_id', 'id');
+        return $this->belongsTo(Category::class);
     }
-    public function inventories()
+
+    public function inventories(): HasMany
     {
-        return $this->hasMany(Inventory::class, 'product_id', '_id');
+        return $this->hasMany(Inventory::class);
+    }
+
+    public function orderDetails(): HasMany
+    {
+        return $this->hasMany(OrderDetail::class);
     }
 }

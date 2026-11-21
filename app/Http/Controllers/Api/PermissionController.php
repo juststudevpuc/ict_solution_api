@@ -3,9 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Permission; // Make sure this is imported!
+use App\Models\Permission;
 use Illuminate\Http\Request;
-use MongoDB\BSON\ObjectId; // Keep this import!
 
 class PermissionController extends Controller
 {
@@ -16,21 +15,28 @@ class PermissionController extends Controller
         return response()->json($permissions);
     }
 
-    // 2. Receive the updated matrix and save it to MongoDB
+    // 2. Receive the updated matrix and save it
     public function updateMatrix(Request $request)
     {
-        $matrix = $request->input('matrix');
+        $matrix = $request->input('matrix', []);
 
         foreach ($matrix as $item) {
-            if (isset($item['_id'])) {
-                // 1. Convert string to MongoDB ObjectId
-                $mongoId = new ObjectId($item['_id']);
+            $id = $item['id'] ?? $item['_id'] ?? null;
+            if ($id) {
+                $updateData = [];
+                if (isset($item['staff'])) {
+                    $updateData['staff'] = filter_var($item['staff'], FILTER_VALIDATE_BOOLEAN);
+                }
+                if (isset($item['user'])) {
+                    $updateData['user'] = filter_var($item['user'], FILTER_VALIDATE_BOOLEAN);
+                }
+                if (isset($item['admin'])) {
+                    $updateData['admin'] = filter_var($item['admin'], FILTER_VALIDATE_BOOLEAN);
+                }
 
-                // 2. Use the Eloquent Model instead of DB::collection
-                Permission::where('_id', $mongoId)->update([
-                    'staff' => filter_var($item['staff'], FILTER_VALIDATE_BOOLEAN),
-                    'user' => filter_var($item['user'], FILTER_VALIDATE_BOOLEAN)
-                ]);
+                if (!empty($updateData)) {
+                    Permission::where('id', $id)->update($updateData);
+                }
             }
         }
 

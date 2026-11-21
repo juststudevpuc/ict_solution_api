@@ -26,7 +26,7 @@ class JobApplicationController extends Controller
     public function store(Request $request)
     {
         $validate = $request->validate([
-            "career_id" => "required|string|exists:careers,_id",
+            "career_id" => "required|exists:careers,id",
             "first_name" => "required|string|max:100",
             "last_name" => "required|string|max:100",
             "email" => "required|email",

@@ -57,10 +57,10 @@ class ProductController extends Controller
         $validate = $request->validate([
             "name" => "required|string|max:225|min:3",
             "description" => "required|string|min:3",
-            "price" => "required|integer|min:0",
+            "price" => "required|numeric|min:0",
             "status" => "required|boolean",
             "image" => "nullable|file|max:2048",
-            "category_id" => "nullable|string|exists:categories,_id"
+            "category_id" => "nullable|exists:categories,id"
         ]);
         $validate["status"] = filter_var($validate["status"], FILTER_VALIDATE_BOOLEAN);
 
@@ -118,10 +118,10 @@ class ProductController extends Controller
         $validate = $request->validate([
             "name" => "sometimes|required|string|max:225|min:3",
             "description" => "sometimes|required|string|min:3",
-            "price" => "sometimes|required|integer|min:0",
+            "price" => "sometimes|required|numeric|min:0",
             "status" => "sometimes|required|boolean",
             "image" => "nullable|file|max:2048",
-            "category_id" => "nullable|string|exists:categories,_id"
+            "category_id" => "nullable|exists:categories,id"
 
         ]);
 

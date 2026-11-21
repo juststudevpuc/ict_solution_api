@@ -11,19 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('order_details', function (Blueprint $collection) {
-            $collection->id();
-            $collection->string("price");
-            $collection->string("qty");
-            $collection->string("discount");
-            $collection->string("total");
-
-            $collection->objectId("product_id");
-            $collection->index("product_id");
-            $collection->objectId("order_id");
-            $collection->index("order_id");
-            
-            $collection->timestamps();
+        Schema::create('order_details', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('order_id')->constrained('orders')->cascadeOnDelete();
+            $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
+            $table->decimal('price', 10, 2)->default(0);
+            $table->integer('qty')->default(1);
+            $table->decimal('discount', 10, 2)->default(0);
+            $table->decimal('total', 10, 2)->default(0);
+            $table->timestamps();
         });
     }
 

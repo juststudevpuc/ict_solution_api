@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use  MongoDB\Laravel\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -24,7 +24,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
-        'phone',    // Make sure this is here!
+        'phone',
         'address',
         'image',
         'company_name',
@@ -40,19 +40,24 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
-    // NEW: Helper method to check if user is admin
-    public function isAdmin()
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function isAdmin(): bool
     {
         return $this->role === 'admin';
     }
 
-    // NEW: Helper method to check if user is regular user
-    public function isUser()
+    public function isUser(): bool
     {
         return $this->role === 'user';
     }
 
-    public function isStaff() {
+    public function isStaff(): bool
+    {
         return $this->role === 'staff';
     }
 
