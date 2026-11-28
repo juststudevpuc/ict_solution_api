@@ -15,21 +15,16 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
-
+    'paths' => ['api/*'],
     'allowed_methods' => ['*'],
-
-  // Add your exact Vercel URL here
-    'allowed_origins' => ['https://ict-solution-2.vercel.app', 'http://localhost:5173'],
-
+    'allowed_origins' => [
+        'https://ict-solution-2.vercel.app',
+        'http://localhost:5173',
+    ],
     'allowed_origins_patterns' => [],
-
     'allowed_headers' => ['*'],
-
     'exposed_headers' => [],
-
     'max_age' => 0,
-
-    'supports_credentials' => true,
+    'supports_credentials' => false,
 
 ];

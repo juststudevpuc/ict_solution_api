@@ -78,42 +78,77 @@ class AuthController extends Controller
     //     ], 200)->withCookie($cookie);
     // }
 
+    // public function login(Request $request)
+    // {
+    //     // 1. Validate the request
+    //     $credentials = $request->validate([
+    //         "email" => "required|email",
+    //         "password" => "required|string|min:3"
+    //     ]);
+
+    //     // 2. Auth::attempt checks the database and password automatically!
+    //     if (\Illuminate\Support\Facades\Auth::attempt($credentials)) {
+
+    //         // 3. This one line securely generates the HttpOnly session cookie
+    //         $request->session()->regenerate();
+
+    //         // 4. Get the authenticated user
+    //         $user = \Illuminate\Support\Facades\Auth::user();
+
+    //         // 5. Return the user data (Notice we DO NOT return a token anymore!)
+    //         return response()->json([
+    //             "user" => $user,
+    //             "message" => $user->role === 'admin' ? "Admin logged in successfully" : "User logged in successfully"
+    //         ], 200);
+    //     }
+
+    //     // 6. If Auth::attempt fails, return an error
+    //     return response()->json(["message" => "Incorrect email or password"], 401);
+    // }
+
+    // public function logout(Request $request)
+    // {
+    //     $request->user()->currentAccessToken()->delete();
+    //     $cookie = Cookie::forget("auth_token");
+
+    //     return response()->json([
+    //         "message" => "User logged out successfully"
+    //     ], 200)->withCookie($cookie);
+    // }
+
     public function login(Request $request)
     {
-        // 1. Validate the request
         $credentials = $request->validate([
             "email" => "required|email",
-            "password" => "required|string|min:3"
+            "password" => "required|string|min:3",
         ]);
 
-        // 2. Auth::attempt checks the database and password automatically!
-        if (\Illuminate\Support\Facades\Auth::attempt($credentials)) {
+        $user = User::where("email", $credentials["email"])->first();
 
-            // 3. This one line securely generates the HttpOnly session cookie
-            $request->session()->regenerate();
-
-            // 4. Get the authenticated user
-            $user = \Illuminate\Support\Facades\Auth::user();
-
-            // 5. Return the user data (Notice we DO NOT return a token anymore!)
+        if (!$user || !Hash::check($credentials["password"], $user->password)) {
             return response()->json([
-                "user" => $user,
-                "message" => $user->role === 'admin' ? "Admin logged in successfully" : "User logged in successfully"
-            ], 200);
+                "message" => "Incorrect email or password",
+            ], 401);
         }
 
-        // 6. If Auth::attempt fails, return an error
-        return response()->json(["message" => "Incorrect email or password"], 401);
+        $token = $user->createToken("auth_token")->plainTextToken;
+
+        return response()->json([
+            "user" => $user,
+            "token" => $token,
+            "message" => $user->role === "admin"
+                ? "Admin logged in successfully"
+                : "User logged in successfully",
+        ], 200);
     }
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
-        $cookie = Cookie::forget("auth_token");
+        $request->user()?->currentAccessToken()?->delete();
 
         return response()->json([
-            "message" => "User logged out successfully"
-        ], 200)->withCookie($cookie);
+            "message" => "User logged out successfully",
+        ], 200);
     }
 
     public function me(Request $request)
@@ -141,7 +176,7 @@ class AuthController extends Controller
             'company_name' => 'nullable|string|max:255',
             'company_industry' => 'nullable|string|max:100',
         ]);
-      // --- NEW: Handle Image Upload via Cloudinary ---
+        // --- NEW: Handle Image Upload via Cloudinary ---
         if ($request->hasFile('image')) {
             $upload = Cloudinary::uploadApi()->upload(
                 $request->file('image')->getRealPath(),

@@ -17,7 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             "checkAdmin" => CheckAdmin::class
         ]);
-        $middleware->statefulApi();
+        // $middleware->statefulApi();
 
         $middleware->trustProxies(at: '*');
     })

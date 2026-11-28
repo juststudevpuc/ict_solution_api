@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\StaffController;
+use App\Http\Controllers\Api\PortfolioController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -30,7 +31,8 @@ Route::get("/product", [ProductController::class, "index"]);
 
 // Route::get("order/search", [OrderController::class, "search"]);
 
-
+Route::get('/portfolios', [PortfolioController::class, 'index']);
+Route::get('/portfolios/{id}', [PortfolioController::class, 'show']);
 Route::get("/careers", [CareerController::class, "index"]);
 Route::get('/careers/{id}', [CareerController::class, 'show']);
 
@@ -64,7 +66,6 @@ Route::prefix("category")->group(function () {
 Route::apiResource('staff', StaffController::class);
 
 Route::get('/permissions', [PermissionController::class, 'index']);
-Route::post('/permissions/update-matrix', [PermissionController::class, 'updateMatrix']);
 
 
 // ==========================================
@@ -73,6 +74,7 @@ Route::post('/permissions/update-matrix', [PermissionController::class, 'updateM
 // We add the "admin" prefix so it doesn't conflict with normal users!
 // Example: POST /api/admin/product
 Route::prefix("admin")->middleware(["auth:sanctum", "checkAdmin"])->group(function () {
+    Route::post('/permissions/update-matrix', [PermissionController::class, 'updateMatrix']);
 
     Route::get("/user", [AuthController::class, "index"]);
 
@@ -90,6 +92,13 @@ Route::prefix("admin")->middleware(["auth:sanctum", "checkAdmin"])->group(functi
         Route::post("/", [ProductController::class, "store"]);
         Route::put("/{id}", [ProductController::class, "update"]);
         Route::delete("/{id}", [ProductController::class, "destroy"]);
+    });
+    Route::prefix('portfolios')->group(function () {
+        Route::get('/', [PortfolioController::class, 'adminIndex']);
+        Route::post('/', [PortfolioController::class, 'store']);
+        Route::put('/{id}', [PortfolioController::class, 'update']);
+        Route::patch('/{id}/toggle-publish', [PortfolioController::class, 'togglePublish']);
+        Route::delete('/{id}', [PortfolioController::class, 'destroy']);
     });
 
     // Admin Orders
